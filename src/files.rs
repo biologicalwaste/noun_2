@@ -6,6 +6,7 @@ pub struct User {
     pub password: String
 }
 
+#[derive(Clone)]
 pub struct Words {
     pub nouns: Vec<String>,
     pub adjectives: Vec<String>

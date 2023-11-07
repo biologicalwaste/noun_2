@@ -1,6 +1,6 @@
 use tokio;
-use clokwerk::AsyncScheduler;
-use cohost::log_in;
+use clokwerk::{AsyncScheduler, TimeUnits};
+use cohost::{log_in, new_post};
 use files::{get_config, get_words};
 
 mod files;
@@ -8,9 +8,34 @@ mod cohost;
 
 #[tokio::main]
 async fn main() {
+    let interval_hours = 3;
+
     let user = get_config("config.json");
     let session = log_in(&user.email, &user.password).await;
     let words = get_words("nouns.json", "adjectives.json");
 
-    let scheduler = AsyncScheduler::new();
+    let mut scheduler = AsyncScheduler::new();
+
+    scheduler.every(interval_hours.hours()).run(move || {
+        let mut post = new_post(&words);
+        let ses = session.clone();
+
+        async move {
+            let _id = match ses.create_post("when-the", &mut post).await {
+                Ok(id) => {
+                    println!("Post successfully created!");
+                    println!("Contents: {}, ID: {}", post.markdown, id);
+                },
+                Err(e) => {
+                    println!("Unable to create post!");
+                    println!("{}", e);
+                }
+            };
+        }
+    });
+
+    loop {
+        scheduler.run_pending();
+        std::thread::sleep(std::time::Duration::from_secs(30));
+    }
 }
