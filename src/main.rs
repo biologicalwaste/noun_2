@@ -1,3 +1,5 @@
+use std::thread;
+use std::time::Duration;
 use tokio;
 use clokwerk::{AsyncScheduler, TimeUnits};
 use cohost::{log_in, new_post};
@@ -39,8 +41,11 @@ async fn main() {
         }
     });
 
-    loop {
-        scheduler.run_pending().await;
-        tokio::time::sleep(std::time::Duration::from_secs(30)).await;
-    }
+    let run_scheduler = thread::spawn(move || {
+        loop {
+            scheduler.run_pending();
+            thread::sleep(Duration::from_secs(1));
+        }
+    });
+    run_scheduler.join().unwrap();
 }
