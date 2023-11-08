@@ -10,16 +10,20 @@ mod cohost;
 async fn main() {
     let interval_hours = 3;
 
+    // Get user data from config file, store it in a User struct
     let user = get_config("config.json");
+    // Get a Session from cohost by calling log_in
     let session = log_in(&user.email, &user.password).await;
+    // Read the nouns and adjectives files and get a Words struct from it.
     let words = get_words("nouns.json", "adjectives.json");
 
     let mut scheduler = AsyncScheduler::new();
 
     scheduler.every(interval_hours.hours()).run(move || {
         println!("Running!");
-        let mut post = new_post(&words);
         let ses = session.clone();
+        let mut post = new_post(&words);
+
         async move {
             println!("Generating post!");
             match ses.create_post("when-the", &mut post).await {
