@@ -8,7 +8,7 @@ mod cohost;
 
 #[tokio::main]
 async fn main() {
-    let interval_hours = 3;
+    let interval_hours = 5;
 
     let user = get_config("config.json");
     let session = log_in(&user.email, &user.password).await;
@@ -16,12 +16,13 @@ async fn main() {
 
     let mut scheduler = AsyncScheduler::new();
 
-    scheduler.every(interval_hours.hours()).run(move || {
+    scheduler.every(interval_hours.seconds()).run(move || {
+        println!("Running!");
         let mut post = new_post(&words);
         let ses = session.clone();
-
         async move {
-            let _id = match ses.create_post("when-the", &mut post).await {
+            println!("Generating post!");
+            match ses.create_post("when-the", &mut post).await {
                 Ok(id) => {
                     println!("Post successfully created!");
                     println!("Contents: {}, ID: {}", post.markdown, id);
@@ -35,7 +36,7 @@ async fn main() {
     });
 
     loop {
-        scheduler.run_pending();
-        std::thread::sleep(std::time::Duration::from_secs(30));
+        scheduler.run_pending().await;
+        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
     }
 }
