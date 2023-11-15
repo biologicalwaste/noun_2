@@ -748,6 +748,7 @@ dependencies = [
 [[package]]
 name = "miraculous_term"
 version = "0.1.0"
+source = "git+https://github.com/biologicalwaste/miraculous_term?branch=main#1a2824f6fa892feeae089e52e4faf7cd9f5f8fd6"
 dependencies = [
  "crossterm",
  "termsize",

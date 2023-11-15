@@ -11,12 +11,13 @@ async fn main() {
     let mut ui = UI::new();
     let mut scheduler = AsyncScheduler::new();
     let (tx, rx) = std::sync::mpsc::channel();
+    let itx = tx.clone();
 
     let interval_hours = 3;
 
     let words = get_words("nouns.json", "adjectives.json");
     let user = get_config("config.json");
-    ui.set_info("Hi :3".to_string());
+    ui.set_info("Press 'q' to quit!".to_string());
     ui.push_draw("Logging in now!".to_string());
     let session = loop {
         match log_in(&user.email, &user.password).await {
@@ -41,6 +42,7 @@ async fn main() {
                 Ok(id) => {
                     stx.send("Post created!".to_string()).unwrap();
                     stx.send(post.markdown).unwrap();
+                    stx.send(id.to_string()).unwrap();
                 }
                 Err(e) => {
                     stx.send("Failed to create post!".to_string()).unwrap();
@@ -62,6 +64,19 @@ async fn main() {
         loop {
             scheduler.run_pending().await;
             tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+        }
+    });
+
+    let _input = std::thread::spawn(move || loop {
+        match UI::key('q') {
+            Ok(k) => match k {
+                true => {
+                    let _ = UI::exit();
+                    std::process::exit(0);
+                }
+                false => continue,
+            },
+            Err(_) => itx.send("Failed to read input!".to_string()).unwrap(),
         }
     });
 
