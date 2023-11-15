@@ -1,19 +1,19 @@
-use std::fs::File;
 use serde_json::{self, Value};
+use std::fs::File;
 
 pub struct User {
     pub email: String,
-    pub password: String
+    pub password: String,
 }
 
 #[derive(Clone)]
 pub struct Words {
     pub nouns: Vec<String>,
-    pub adjectives: Vec<String>
+    pub adjectives: Vec<String>,
 }
 
 pub fn get_config(path: &str) -> User {
-    let file = match File::open(path){
+    let file = match File::open(path) {
         Ok(f) => f,
         Err(e) => {
             println!("Couldn't find config file!!!!!");
@@ -32,14 +32,14 @@ pub fn get_config(path: &str) -> User {
 
     let user = User {
         email: config[0].as_str().unwrap().to_string(),
-        password: config[1].as_str().unwrap().to_string()
+        password: config[1].as_str().unwrap().to_string(),
     };
 
     user
 }
 
 pub fn get_words(nouns_path: &str, adjectives_path: &str) -> Words {
-    let nouns_file = match File::open(nouns_path){
+    let nouns_file = match File::open(nouns_path) {
         Ok(f) => f,
         Err(e) => {
             println!("Couldn't find nouns file!!!!!");
@@ -47,7 +47,7 @@ pub fn get_words(nouns_path: &str, adjectives_path: &str) -> Words {
             std::process::exit(1)
         }
     };
-    let adjectives_file = match File::open(adjectives_path){
+    let adjectives_file = match File::open(adjectives_path) {
         Ok(f) => f,
         Err(e) => {
             println!("Couldn't find adjectives file!!!!!");
@@ -72,7 +72,7 @@ pub fn get_words(nouns_path: &str, adjectives_path: &str) -> Words {
                 println!("{}", e);
                 std::process::exit(1)
             }
-        }
+        },
     };
 
     words

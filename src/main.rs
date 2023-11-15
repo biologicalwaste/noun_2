@@ -1,42 +1,69 @@
-use tokio;
 use clokwerk::{AsyncScheduler, TimeUnits};
 use cohost::{log_in, new_post};
 use files::{get_config, get_words};
+use miraculous_term::UI;
 
-mod files;
 mod cohost;
+mod files;
 
 #[tokio::main]
 async fn main() {
+    let mut ui = UI::new();
+    let mut scheduler = AsyncScheduler::new();
+    let (tx, rx) = std::sync::mpsc::channel();
+
     let interval_hours = 3;
 
-    let user = get_config("config.json");
-    let session = log_in(&user.email, &user.password).await;
     let words = get_words("nouns.json", "adjectives.json");
+    let user = get_config("config.json");
+    ui.set_info("Hi :3".to_string());
+    ui.push_draw("Logging in now!".to_string());
+    let session = loop {
+        match log_in(&user.email, &user.password).await {
+            Ok(session) => {
+                ui.push_draw("Login successful!".to_string());
+                break session;
+            }
+            Err(e) => {
+                ui.push_draw("Login failed! Trying again in a minute!".to_string());
+                ui.push_draw(e.to_string());
+            }
+        }
+    };
 
-    let mut scheduler = AsyncScheduler::new();
-
-    scheduler.every(interval_hours.hours()).run(move || {
-        println!("Running!");
+    scheduler.every(interval_hours.seconds()).run(move || {
+        let stx = tx.clone();
         let mut post = new_post(&words);
         let ses = session.clone();
+        stx.send("Running now!".to_string()).unwrap();
         async move {
-            println!("Generating post!");
             match ses.create_post("when-the", &mut post).await {
                 Ok(id) => {
-                    println!("Post successfully created!");
-                    println!("Contents: {}, ID: {}", post.markdown, id);
-                },
+                    stx.send("Post created!".to_string()).unwrap();
+                    stx.send(post.markdown).unwrap();
+                }
                 Err(e) => {
-                    println!("Unable to create post!");
-                    println!("{}", e);
+                    stx.send("Failed to create post!".to_string()).unwrap();
+                    stx.send(e.to_string()).unwrap();
                 }
             };
         }
     });
 
-    loop {
-        scheduler.run_pending().await;
-        tokio::time::sleep(std::time::Duration::from_secs(30)).await;
-    }
+    let _run_ui = std::thread::spawn(move || {
+        let mut nui = ui.clone();
+        loop {
+            let to_draw: String = rx.recv().unwrap().to_string();
+            nui.push_draw(to_draw);
+        }
+    });
+
+    let run_scheduler = tokio::task::spawn(async move {
+        loop {
+            scheduler.run_pending().await;
+            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+        }
+    });
+
+    run_scheduler.await;
 }
