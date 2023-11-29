@@ -32,7 +32,7 @@ async fn main() {
         }
     };
 
-    scheduler.every(interval_hours.seconds()).run(move || {
+    scheduler.every(interval_hours.hours().run(move || {
         let stx = tx.clone();
         let mut post = new_post(&words);
         let ses = session.clone();
